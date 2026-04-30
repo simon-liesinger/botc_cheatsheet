@@ -85,6 +85,15 @@ label.chip.off { opacity: 0.35; }
 .chip-minion { background: #301a1a; color: #e06666; border-color: #e06666; }
 .chip-demon { background: #3a0a0a; color: #c41e3a; border-color: #c41e3a; }
 
+#intro {
+  padding: 12px 16px 4px;
+}
+#intro p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #999;
+  margin: 0;
+}
 #results { padding: 8px 12px; }
 .set-header {
   font-size: 14px;
@@ -164,6 +173,9 @@ label.chip.off { opacity: 0.35; }
     <div class="filter-group" id="faction-filters"></div>
   </div>
 </header>
+<div id="intro">
+  <p>Blood on the Clocktower is a social deduction game for 5–20 players. Each player is secretly assigned a character. The <b style="color:#5b9bd5">good team</b> (Townsfolk &amp; Outsiders) tries to find and execute the <b style="color:#c41e3a">Demon</b> before everyone is dead. The <b style="color:#e06666">evil team</b> (Minions &amp; Demon) tries to survive, bluff, and mislead. Each night, the Demon kills a player; each day, the town debates and may execute one player by vote. Characters have unique abilities that provide information, protection, or chaos. Even dead players get one final vote — nobody is eliminated from the conversation.</p>
+</div>
 <div id="results"></div>
 
 <script>
@@ -413,14 +425,13 @@ function highlight(text, q) {
   return text.slice(0, i) + '<mark style="background:#c41e3a44;color:inherit;border-radius:2px;padding:0 1px">' + text.slice(i, i + q.length) + '</mark>' + text.slice(i + q.length);
 }
 
-document.addEventListener('click', e => {
-  const input = e.target.closest('label.chip')?.querySelector('input');
-  if (!input) return;
+document.addEventListener('change', e => {
+  const input = e.target;
+  if (!input.dataset.type) return;
   const {type, id} = input.dataset;
   const set = type === 'set' ? state.sets : state.factions;
-  // Will toggle after this event, so checked = current state before toggle
-  if (input.checked) set.delete(id); else set.add(id);
-  input.closest('label').classList.toggle('off', input.checked);
+  if (input.checked) set.add(id); else set.delete(id);
+  input.closest('label').classList.toggle('off', !input.checked);
   render();
 });
 
