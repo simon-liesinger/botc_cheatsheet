@@ -26,7 +26,7 @@ header {
 }
 h1 {
   font-size: 18px;
-  color: #c41e3a;
+  color: #CC3333;
   margin-bottom: 10px;
   text-align: center;
   letter-spacing: 1px;
@@ -45,7 +45,7 @@ h1 {
   font-size: 16px;
   outline: none;
 }
-.search-box input:focus { border-color: #c41e3a; }
+.search-box input:focus { border-color: #CC3333; }
 .search-box input::placeholder { color: #666; }
 .filters {
   display: flex;
@@ -80,10 +80,10 @@ label.chip.off { opacity: 0.35; }
 .chip-bmr { background: #1a2a1a; color: #7fcd91; border-color: #7fcd91; }
 .chip-exp { background: #2a2a1a; color: #d4c95c; border-color: #d4c95c; }
 /* Faction chips */
-.chip-townsfolk { background: #1a2440; color: #5b9bd5; border-color: #5b9bd5; }
-.chip-outsider { background: #1a3030; color: #45b8ac; border-color: #45b8ac; }
-.chip-minion { background: #301a1a; color: #e06666; border-color: #e06666; }
-.chip-demon { background: #3a0a0a; color: #c41e3a; border-color: #c41e3a; }
+.chip-townsfolk { background: #1a2440; color: #4488CC; border-color: #4488CC; }
+.chip-outsider { background: #1a2a1a; color: #44AA66; border-color: #44AA66; }
+.chip-minion { background: #302010; color: #DD8833; border-color: #DD8833; }
+.chip-demon { background: #3a0a0a; color: #CC3333; border-color: #CC3333; }
 
 #intro {
   padding: 12px 16px 4px;
@@ -113,10 +113,10 @@ label.chip.off { opacity: 0.35; }
   letter-spacing: 1.5px;
   padding: 8px 4px 4px;
 }
-.faction-townsfolk .faction-header { color: #5b9bd5; }
-.faction-outsider .faction-header { color: #45b8ac; }
-.faction-minion .faction-header { color: #e06666; }
-.faction-demon .faction-header { color: #c41e3a; }
+.faction-townsfolk .faction-header { color: #4488CC; }
+.faction-outsider .faction-header { color: #44AA66; }
+.faction-minion .faction-header { color: #DD8833; }
+.faction-demon .faction-header { color: #CC3333; }
 
 .card {
   padding: 8px 10px;
@@ -124,10 +124,10 @@ label.chip.off { opacity: 0.35; }
   border-radius: 8px;
   border-left: 3px solid;
 }
-.card-townsfolk { background: #101a2a; border-color: #5b9bd5; }
-.card-outsider { background: #0f1f1f; border-color: #45b8ac; }
-.card-minion { background: #1f0f0f; border-color: #e06666; }
-.card-demon { background: #200808; border-color: #c41e3a; }
+.card-townsfolk { background: #101a2a; border-color: #4488CC; }
+.card-outsider { background: #0f1f10; border-color: #44AA66; }
+.card-minion { background: #1f1508; border-color: #DD8833; }
+.card-demon { background: #200808; border-color: #CC3333; }
 
 .char-icon { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle; }
 .card .name {
@@ -136,10 +136,10 @@ label.chip.off { opacity: 0.35; }
   display: flex;
   align-items: center;
 }
-.card-townsfolk .name { color: #5b9bd5; }
-.card-outsider .name { color: #45b8ac; }
-.card-minion .name { color: #e06666; }
-.card-demon .name { color: #c41e3a; }
+.card-townsfolk .name { color: #4488CC; }
+.card-outsider .name { color: #44AA66; }
+.card-minion .name { color: #DD8833; }
+.card-demon .name { color: #CC3333; }
 
 .card .ability {
   font-size: 13px;
@@ -177,7 +177,7 @@ label.chip.off { opacity: 0.35; }
   </div>
 </header>
 <div id="intro">
-  <p>Blood on the Clocktower is a social deduction game for 5–20 players. Each player is secretly assigned a character. The <b style="color:#5b9bd5">good team</b> (Townsfolk &amp; Outsiders) tries to find and execute the <b style="color:#c41e3a">Demon</b> before everyone is dead. The <b style="color:#e06666">evil team</b> (Minions &amp; Demon) tries to survive, bluff, and mislead. Each night, the Demon kills a player; each day, the town debates and may execute one player by vote. Characters have unique abilities that provide information, protection, or chaos. Even dead players get one final vote — nobody is eliminated from the conversation.</p>
+  <p>Blood on the Clocktower is a social deduction game for 5–20 players. Each player is secretly assigned a character. The <b style="color:#4488CC">good team</b> (Townsfolk &amp; Outsiders) tries to find and execute the <b style="color:#CC3333">Demon</b> before everyone is dead. The <b style="color:#DD8833">evil team</b> (Minions &amp; Demon) tries to survive, bluff, and mislead. Each night, the Demon kills a player; each day, the town debates and may execute one player by vote. Characters have unique abilities that provide information, protection, or chaos. Even dead players get one final vote — nobody is eliminated from the conversation.</p>
 </div>
 <div id="results"></div>
 
@@ -427,7 +427,7 @@ function highlight(text, q) {
   if (!q) return text;
   const i = text.toLowerCase().indexOf(q);
   if (i < 0) return text;
-  return text.slice(0, i) + '<mark style="background:#c41e3a44;color:inherit;border-radius:2px;padding:0 1px">' + text.slice(i, i + q.length) + '</mark>' + text.slice(i + q.length);
+  return text.slice(0, i) + '<mark style="background:#CC333344;color:inherit;border-radius:2px;padding:0 1px">' + text.slice(i, i + q.length) + '</mark>' + text.slice(i + q.length);
 }
 
 document.addEventListener('change', e => {
