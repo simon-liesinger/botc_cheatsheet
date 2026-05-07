@@ -84,6 +84,7 @@ label.chip.off { opacity: 0.35; }
 .chip-outsider { background: #0a2a28; color: #24F2E5; border-color: #24F2E5; }
 .chip-minion { background: #301008; color: #F56618; border-color: #F56618; }
 .chip-demon { background: #3a0a0a; color: #CC3333; border-color: #CC3333; }
+.chip-traveller { background: #1a102a; color: #9966CC; border-color: #9966CC; }
 
 #intro {
   padding: 12px 16px 4px;
@@ -129,6 +130,7 @@ label.chip.off { opacity: 0.35; }
 .card-outsider { background: #082020; border-color: #24F2E5; }
 .card-minion { background: #1f0a04; border-color: #F56618; }
 .card-demon { background: #200808; border-color: #CC3333; }
+.card-traveller { background: #150d20; border-color: #9966CC; }
 
 .char-icon { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle; }
 .card .name {
@@ -141,6 +143,7 @@ label.chip.off { opacity: 0.35; }
 .card-outsider .name { color: #24F2E5; }
 .card-minion .name { color: #F56618; }
 .card-demon .name { color: #CC3333; }
+.card-traveller .name { color: #9966CC; }
 
 .card .ability {
   font-size: 13px;
@@ -247,6 +250,12 @@ const CHARACTERS = [
   {n:"Vigormortis",a:"Each night*, choose a player: they die. Minions you kill keep their ability & poison 1 Townsfolk neighbour. [-1 Outsider]",s:"sv",f:"demon",i:W+"1/1a/Icon_vigormortis.png"},
   {n:"No Dashii",a:"Each night*, choose a player: they die. Your 2 Townsfolk neighbours are poisoned.",s:"sv",f:"demon",i:W+"e/eb/Icon_nodashii.png"},
   {n:"Vortox",a:"Each night*, choose a player: they die. Townsfolk abilities yield false info. Each day, if no-one is executed, evil wins.",s:"sv",f:"demon",i:W+"8/89/Icon_vortox.png"},
+  // Sects & Violets - Travellers
+  {n:"Barista",a:"Each night, until dusk, 1) a player becomes sober, healthy and gets true info, or 2) their ability works twice. The Storyteller chooses which.",s:"sv",f:"traveller",i:W+"2/24/Icon_barista.png"},
+  {n:"Harlot",a:"Each night*, choose a living player: if they agree, you learn their character, but you both might die.",s:"sv",f:"traveller",i:W+"6/60/Icon_harlot.png"},
+  {n:"Butcher",a:"Each day, after the 1st execution, you may nominate again.",s:"sv",f:"traveller",i:W+"e/e3/Icon_butcher.png"},
+  {n:"Bone Collector",a:"Once per game, at night, choose a dead player: they regain their ability until dusk.",s:"sv",f:"traveller",i:W+"9/9e/Icon_bonecollector.png"},
+  {n:"Deviant",a:"If you were funny today, you cannot die by exile.",s:"sv",f:"traveller",i:W+"a/a5/Icon_deviant.png"},
 
   // Bad Moon Rising - Townsfolk
   {n:"Grandmother",a:"You start knowing a good player & their character. If the Demon kills them, you die too.",s:"bmr",f:"townsfolk",i:W+"2/26/Icon_grandmother.png"},
@@ -277,6 +286,12 @@ const CHARACTERS = [
   {n:"Pukka",a:"Each night, choose a player: they are poisoned. The previously poisoned player dies then becomes healthy.",s:"bmr",f:"demon",i:W+"f/f4/Icon_pukka.png"},
   {n:"Shabaloth",a:"Each night*, choose 2 players: they die. A dead player you chose last night might be regurgitated.",s:"bmr",f:"demon",i:W+"1/1f/Icon_shabaloth.png"},
   {n:"Po",a:"Each night*, you may choose a player: they die. If your last choice was no-one, choose 3 players tonight.",s:"bmr",f:"demon",i:W+"b/b2/Icon_po.png"},
+  // Bad Moon Rising - Travellers
+  {n:"Apprentice",a:"On your 1st night, you gain a Townsfolk ability (if you are good), or a Minion ability (if you are evil).",s:"bmr",f:"traveller",i:W+"0/03/Icon_apprentice.png"},
+  {n:"Matron",a:"Each day, you may choose up to 3 sets of 2 players to swap seats. Players may not leave their seats to talk in private.",s:"bmr",f:"traveller",i:W+"2/21/Icon_matron.png"},
+  {n:"Judge",a:"Once per game, if another player nominated, you may choose to force the current execution to pass or fail.",s:"bmr",f:"traveller",i:W+"5/59/Icon_judge.png"},
+  {n:"Bishop",a:"Only the Storyteller can nominate. At least 1 nomination must be made per day.",s:"bmr",f:"traveller",i:W+"7/71/Icon_bishop.png"},
+  {n:"Voudon",a:"Only you and the dead can vote. They don't need a vote token to do so. A 50% majority is not required.",s:"bmr",f:"traveller",i:W+"6/6d/Icon_voudon.png"},
 
   // Experimental - Townsfolk
   {n:"Acrobat",a:"Each night*, choose a player: if they are or become drunk or poisoned tonight, you die.",s:"exp",f:"townsfolk",i:W+"b/b5/Icon_acrobat.png"},
@@ -348,6 +363,10 @@ const CHARACTERS = [
   {n:"Ojo",a:"Each night*, choose a character: they die. If they are not in play, the Storyteller chooses who dies.",s:"exp",f:"demon",i:W+"6/6f/Icon_ojo.png"},
   {n:"Riot",a:"On day 3, Minions become Riot & nominees die but nominate an alive player immediately. This must happen.",s:"exp",f:"demon",i:W+"2/2d/Icon_riot.png"},
   {n:"Yaggababble",a:"You start knowing a secret phrase. For each time you said it publicly today, a player might die.",s:"exp",f:"demon",i:W+"0/08/Icon_yaggababble.png"},
+  // Experimental - Travellers
+  {n:"Gangster",a:"Once per day, you may choose to kill a living player. If you do, you die too.",s:"exp",f:"traveller",i:W+"a/a5/Icon_gangster.png"},
+  {n:"Gnome",a:"If you would be exiled, you are not. If a good player nominates you for exile and at least 1 evil player voted, the nominator is executed.",s:"exp",f:"traveller",i:W+"e/e0/Icon_gnome.png"},
+  {n:"Cacklejack",a:"Once per game, during the day, publicly choose a player: they die. If they are not the alignment you think they are, you die.",s:"exp",f:"traveller",i:W+"d/d7/Icon_cacklejack.png"},
 ];
 
 const SETS = [
@@ -361,11 +380,12 @@ const FACTIONS = [
   {id:'outsider', label:'Outsiders'},
   {id:'minion', label:'Minions'},
   {id:'demon', label:'Demons'},
+  {id:'traveller', label:'Travellers'},
 ];
 
 const SET_LABELS = {tb:'Trouble Brewing',sv:'Sects & Violets',bmr:'Bad Moon Rising',exp:'Experimental'};
 const FACTION_LABELS = {townsfolk:'Townsfolk',outsider:'Outsiders',minion:'Minions',demon:'Demons',traveller:'Travellers'};
-const FACTION_ORDER = ['townsfolk','outsider','minion','demon'];
+const FACTION_ORDER = ['townsfolk','outsider','minion','demon','traveller'];
 const SET_ORDER = ['tb','sv','bmr','exp'];
 
 const state = {
