@@ -167,6 +167,65 @@ label.chip.off { opacity: 0.35; }
   font-size: 12px;
   padding: 4px;
 }
+.gloss {
+  font-size: 10px;
+  color: #CC3333;
+  cursor: pointer;
+  vertical-align: super;
+  user-select: none;
+  padding: 2px 3px;
+  margin: -2px 0;
+  font-weight: 700;
+  display: inline-block;
+  line-height: 1;
+}
+.gloss:active { color: #ff6666; }
+.gloss[data-key="star"] {
+  color: #e8a87c;
+  font-size: 13px;
+  vertical-align: baseline;
+}
+#glossary-popup {
+  position: fixed;
+  bottom: 16px;
+  left: 12px;
+  right: 12px;
+  background: #2a1f3a;
+  border: 1px solid #CC3333;
+  border-radius: 10px;
+  padding: 14px 36px 14px 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+  z-index: 100;
+  display: none;
+  max-width: 600px;
+  margin: 0 auto;
+}
+#glossary-popup.show { display: block; }
+#glossary-popup .gloss-label {
+  font-weight: 700;
+  color: #CC3333;
+  font-size: 13px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+#glossary-popup .gloss-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e0e0e0;
+}
+#glossary-popup .gloss-close {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 10px;
+  line-height: 1;
+}
 </style>
 </head>
 <body>
@@ -182,10 +241,85 @@ label.chip.off { opacity: 0.35; }
 </header>
 <div id="intro">
   <p>Blood on the Clocktower is a social deduction game for 5–20 players. Each player is secretly assigned a character. The <b style="color:#4488CC">good team</b> (Townsfolk &amp; Outsiders) tries to find and execute the <b style="color:#CC3333">Demon</b> before everyone is dead. The <b style="color:#F56618">evil team</b> (Minions &amp; Demon) tries to survive, bluff, and mislead. Each night, the Demon kills a player; each day, the town debates and may execute one player by vote. Characters have unique abilities that provide information, protection, or chaos. Even dead players get one final vote — nobody is eliminated from the conversation.</p>
+  <p style="margin-top:6px;font-size:12px;color:#777">Tap any small <span style="color:#CC3333;font-weight:700">?</span> or <span style="color:#e8a87c;font-weight:700">*</span> in an ability for a glossary explanation.</p>
 </div>
 <div id="results"></div>
 
+<div id="glossary-popup" role="dialog" aria-live="polite">
+  <button class="gloss-close" aria-label="Close">&times;</button>
+  <div class="gloss-label"></div>
+  <div class="gloss-text"></div>
+</div>
+
 <script>
+const GLOSSARY = {
+  star: {
+    label: 'Each night*',
+    text: 'The asterisk means: this ability does NOT trigger on the first night. So "Each night*" = every night except the first night. (Used so info/kill abilities don\'t fire before the game has any state to act on.)'
+  },
+  poison: {
+    label: 'Poisoned',
+    text: 'A poisoned player\'s ability does not function. They are still woken at night as usual, but the Storyteller gives them false info, or their kills/effects do nothing. The player does not know they are poisoned. Lasts as long as the source ability says.'
+  },
+  drunk: {
+    label: 'Drunk',
+    text: 'A drunk player\'s ability does not function — exactly like being poisoned, just caused by a different source (e.g. the Drunk Outsider, the Sailor, the Innkeeper). The player thinks their ability works normally and may be fed false info.'
+  },
+  mad: {
+    label: 'Mad',
+    text: '"Mad" means the player must act as if a particular thing is true (e.g. "mad about being the Imp" = must keep claiming to be the Imp, must not contradict it). If the Storyteller judges they broke madness, they may be executed privately.'
+  },
+  register: {
+    label: 'Register as',
+    text: 'How a player "appears" to a specific ability. E.g. the Recluse is good but may register as evil to a Fortune Teller — so the FT learns "Demon" even though the Recluse is good. The Storyteller decides each time, per ability, even if the player is dead.'
+  },
+  grimoire: {
+    label: 'Grimoire',
+    text: 'The Storyteller\'s hidden game board, showing every player\'s character token, alignment, and status reminders. Only the Storyteller sees it (the Spy and Widow are exceptions while their ability fires).'
+  },
+  bluffs: {
+    label: 'Bluffs',
+    text: 'Bluffs are character names that are NOT in play this game. Evil players are shown a few bluffs they can safely pretend to be without being contradicted by someone actually playing that role.'
+  },
+  exile: {
+    label: 'Exile',
+    text: 'Exile is to Travellers what execution is to ordinary players. Any player may call for an exile vote on a Traveller; if 50%+ vote yes, the Traveller is removed from the game.'
+  },
+  dusk: {
+    label: 'Dusk',
+    text: 'Dusk is the transition from day to night. Effects that last "until dusk" end when the day ends.'
+  },
+  alignment: {
+    label: 'Alignment',
+    text: 'A player\'s team: good (Townsfolk + Outsiders) or evil (Minions + Demons). Some abilities can change a player\'s alignment mid-game.'
+  }
+};
+
+function annotate(text) {
+  text = text.replace(/(\bnight)(\*)/g, '$1<sup class="gloss" data-key="star">$2</sup>');
+  const terms = [
+    {key: 'poison',    re: /(poisoned|poison(?!er))/i},
+    {key: 'drunk',     re: /\bdrunk\b/i},
+    {key: 'mad',       re: /\bmad\b/i},
+    {key: 'register',  re: /\bregister(?:s|ed|ing)?\b/i},
+    {key: 'grimoire',  re: /\bGrimoire\b/i},
+    {key: 'bluffs',    re: /\bbluffs?\b/i},
+    {key: 'exile',     re: /\bexil(?:e|ed|ing)\b/i},
+    {key: 'dusk',      re: /\bdusk\b/i},
+    {key: 'alignment', re: /\balignments?\b/i},
+  ];
+  const inserts = [];
+  for (const {key, re} of terms) {
+    const m = re.exec(text);
+    if (m) inserts.push({pos: m.index + m[0].length, key});
+  }
+  inserts.sort((a, b) => b.pos - a.pos);
+  for (const {pos, key} of inserts) {
+    text = text.slice(0, pos) + `<sup class="gloss" data-key="${key}">?</sup>` + text.slice(pos);
+  }
+  return text;
+}
+
 const W="https://wiki.bloodontheclocktower.com/images/";
 const CHARACTERS = [
   // Trouble Brewing - Townsfolk
@@ -437,8 +571,8 @@ function render() {
       if (!fChars.length) continue;
       html += `<div class="faction-${f}"><div class="faction-header">${FACTION_LABELS[f]}</div>`;
       for (const c of fChars) {
-        // Highlight setup text in brackets
-        const ability = c.a.replace(/(\[.*?\])/g, '<em>$1</em>');
+        // Annotate glossary terms, then highlight setup text in brackets
+        const ability = annotate(c.a).replace(/(\[.*?\])/g, '<em>$1</em>');
         const img = c.i ? `<img class="char-icon" src="${c.i}" alt="" loading="lazy">` : '';
         html += `<div class="card card-${c.f}"><div class="name">${img}${highlight(c.n, q)}</div><div class="ability">${ability}</div></div>`;
       }
@@ -471,6 +605,23 @@ document.getElementById('search').addEventListener('input', e => {
   state.search = e.target.value;
   render();
 });
+
+const popup = document.getElementById('glossary-popup');
+document.addEventListener('click', e => {
+  const g = e.target.closest('.gloss');
+  if (g) {
+    e.stopPropagation();
+    const entry = GLOSSARY[g.dataset.key];
+    if (entry) {
+      popup.querySelector('.gloss-label').textContent = entry.label;
+      popup.querySelector('.gloss-text').textContent = entry.text;
+      popup.classList.add('show');
+    }
+    return;
+  }
+  if (!e.target.closest('#glossary-popup')) popup.classList.remove('show');
+});
+popup.querySelector('.gloss-close').addEventListener('click', () => popup.classList.remove('show'));
 
 createChips();
 render();
