@@ -277,6 +277,10 @@ const GLOSSARY = {
     label: 'Red Herring',
     text: 'The good player the Fortune Teller\'s ability falsely flags as a Demon. The "red herring" is NOT a role or character of its own — it\'s just a designation the Storyteller assigns to one random good player at the start of the game. That player doesn\'t know they\'re the red herring. This stops the FT from being a guaranteed instant Demon-finder.'
   },
+  traveller: {
+    label: 'Travellers',
+    text: 'Travellers are special characters used when a player joins or leaves a game in progress. Unlike everyone else, a Traveller\'s character AND their alignment (good or evil) is announced publicly to all players. They cannot be executed by normal nomination — they can only be removed by exile, a separate public vote.'
+  },
   grimoire: {
     label: 'Grimoire',
     text: 'The Storyteller\'s hidden game board, showing every player\'s character token, alignment, and status reminders. Only the Storyteller sees it (the Spy and Widow are exceptions while their ability fires).'
@@ -581,7 +585,8 @@ function render() {
       if (!state.factions.has(f)) continue;
       const fChars = setChars.filter(c => c.f === f);
       if (!fChars.length) continue;
-      html += `<div class="faction-${f}"><div class="faction-header">${FACTION_LABELS[f]}</div>`;
+      const headerNote = f === 'traveller' ? '<sup class="gloss" data-key="traveller">?</sup>' : '';
+      html += `<div class="faction-${f}"><div class="faction-header">${FACTION_LABELS[f]}${headerNote}</div>`;
       for (const c of fChars) {
         // Annotate glossary terms, then highlight setup text in brackets
         const ability = annotate(c.a).replace(/(\[.*?\])/g, '<em>$1</em>');
