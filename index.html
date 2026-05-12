@@ -271,7 +271,11 @@ const GLOSSARY = {
   },
   register: {
     label: 'Register as',
-    text: 'How a player "appears" to a specific ability. E.g. the Recluse is good but may register as evil to a Fortune Teller — so the FT learns "Demon" even though the Recluse is good. The Storyteller decides each time, per ability, even if the player is dead.'
+    text: 'How a player "appears" to a specific ability. E.g. the Recluse is good but may register as evil to the Undertaker — so if the Recluse is executed, the Undertaker may learn they were a Minion or Demon, even though the Recluse was good. The Storyteller decides each time, per ability, even if the player is dead.'
+  },
+  red_herring: {
+    label: 'Red Herring',
+    text: 'The good player the Fortune Teller\'s ability falsely flags as a Demon. The "red herring" is NOT a role or character of its own — it\'s just a designation the Storyteller assigns to one random good player at the start of the game. That player doesn\'t know they\'re the red herring. This stops the FT from being a guaranteed instant Demon-finder.'
   },
   grimoire: {
     label: 'Grimoire',
@@ -297,17 +301,25 @@ const GLOSSARY = {
 
 function annotate(text) {
   text = text.replace(/(\bnight)(\*)/g, '$1<sup class="gloss" data-key="star">$2</sup>');
+  const redHerringPhrase = /There is a good player that registers as a Demon to you/;
+  const hasRedHerring = redHerringPhrase.test(text);
+  if (hasRedHerring) {
+    text = text.replace(/(There is a good player that registers as a Demon to you)(\.)/,
+      '$1<sup class="gloss" data-key="red_herring">?</sup>$2');
+  }
   const terms = [
     {key: 'poison',    re: /(poisoned|poison(?!er))/i},
     {key: 'drunk',     re: /\bdrunk\b/i},
     {key: 'mad',       re: /\bmad\b/i},
-    {key: 'register',  re: /\bregister(?:s|ed|ing)?\b/i},
     {key: 'grimoire',  re: /\bGrimoire\b/i},
     {key: 'bluffs',    re: /\bbluffs?\b/i},
     {key: 'exile',     re: /\bexil(?:e|ed|ing)\b/i},
     {key: 'dusk',      re: /\bdusk\b/i},
     {key: 'alignment', re: /\balignments?\b/i},
   ];
+  if (!hasRedHerring) {
+    terms.push({key: 'register', re: /\bregister(?:s|ed|ing)?\b/i});
+  }
   const inserts = [];
   for (const {key, re} of terms) {
     const m = re.exec(text);
