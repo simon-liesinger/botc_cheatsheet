@@ -300,6 +300,10 @@ const GLOSSARY = {
   alignment: {
     label: 'Alignment',
     text: 'A player\'s team: good (Townsfolk + Outsiders) or evil (Minions + Demons). Some abilities can change a player\'s alignment mid-game.'
+  },
+  vote_token: {
+    label: 'Vote Token',
+    text: 'Each dead player has one vote token (also called a ghost vote). They may use it once to vote after dying — that uses the token. Some characters interact with vote tokens specifically.'
   }
 };
 
@@ -320,6 +324,7 @@ function annotate(text) {
     {key: 'exile',     re: /\bexil(?:e|ed|ing)\b/i},
     {key: 'dusk',      re: /\bdusk\b/i},
     {key: 'alignment', re: /\balignments?\b/i},
+    {key: 'vote_token', re: /\bvote tokens?\b/i},
   ];
   if (!hasRedHerring) {
     terms.push({key: 'register', re: /\bregister(?:s|ed|ing)?\b/i});
@@ -369,7 +374,7 @@ const CHARACTERS = [
   {n:"Thief",a:"Each night, choose a player (not yourself): their vote counts negatively tomorrow.",s:"tb",f:"traveller",i:W+"7/77/Icon_thief.png"},
   {n:"Gunslinger",a:"Each day, after the 1st vote has been tallied, you may choose a player that voted: they die.",s:"tb",f:"traveller",i:W+"1/1c/Icon_gunslinger.png"},
   {n:"Scapegoat",a:"If a player of your alignment is executed, you might be executed instead.",s:"tb",f:"traveller",i:W+"3/3a/Icon_scapegoat.png"},
-  {n:"Beggar",a:"You must use an outsider ability. Each day you may ask a player for their vote.",s:"tb",f:"traveller",i:W+"e/e3/Icon_beggar.png"},
+  {n:"Beggar",a:"You must use a vote token to vote. If a dead player gives you theirs, you learn their alignment. You are sober and healthy.",s:"tb",f:"traveller",i:W+"e/e3/Icon_beggar.png"},
 
   // Sects & Violets - Townsfolk
   {n:"Clockmaker",a:"You start knowing how many steps from the Demon to its nearest Minion.",s:"sv",f:"townsfolk",i:W+"3/3d/Icon_clockmaker.png"},
