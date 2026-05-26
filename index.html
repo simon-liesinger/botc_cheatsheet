@@ -79,6 +79,7 @@ label.chip.off { opacity: 0.35; }
 .chip-sv { background: #1a1a2e; color: #b088f9; border-color: #b088f9; }
 .chip-bmr { background: #0a2a28; color: #7fcd91; border-color: #7fcd91; }
 .chip-exp { background: #2a2a1a; color: #d4c95c; border-color: #d4c95c; }
+.chip-custom { background: #2a2118; color: #f0c060; border-color: #f0c060; }
 /* Faction chips */
 .chip-townsfolk { background: #1a2440; color: #4488CC; border-color: #4488CC; }
 .chip-outsider { background: #0a2a28; color: #24F2E5; border-color: #24F2E5; }
@@ -106,6 +107,7 @@ label.chip.off { opacity: 0.35; }
 .set-sv .set-header { color: #b088f9; }
 .set-bmr .set-header { color: #7fcd91; }
 .set-exp .set-header { color: #d4c95c; }
+.set-custom .set-header { color: #f0c060; }
 
 .faction-header {
   font-size: 11px;
@@ -226,6 +228,81 @@ label.chip.off { opacity: 0.35; }
   padding: 4px 10px;
   line-height: 1;
 }
+#edit-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+#edit-script-btn {
+  background: #2a2118;
+  color: #f0c060;
+  border: 1.5px solid #f0c060;
+  border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+#edit-script-btn:active { background: #3a3020; }
+body.editing #edit-script-btn {
+  background: #f0c060;
+  color: #1a1a2e;
+}
+#script-count { color: #888; font-size: 12px; }
+#edit-clear {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  display: none;
+  font-family: inherit;
+}
+body.editing #edit-clear { display: inline; }
+#edit-banner {
+  display: none;
+  background: #2a2118;
+  color: #f0c060;
+  font-size: 12px;
+  padding: 6px 12px;
+  margin-top: 6px;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid #f0c060;
+}
+body.editing #edit-banner { display: block; }
+body.editing .card {
+  position: relative;
+  cursor: pointer;
+  padding-right: 38px;
+}
+body.editing .card::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border: 2px solid #555;
+  border-radius: 5px;
+  background: transparent;
+  box-sizing: border-box;
+}
+body.editing .card.in-script::after {
+  content: '✓';
+  background: #f0c060;
+  color: #1a1a2e;
+  border-color: #f0c060;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 18px;
+}
 </style>
 </head>
 <body>
@@ -238,6 +315,12 @@ label.chip.off { opacity: 0.35; }
     <div class="filter-group" id="set-filters"></div>
     <div class="filter-group" id="faction-filters"></div>
   </div>
+  <div id="edit-bar">
+    <button id="edit-script-btn">&#9998; Edit Custom Script</button>
+    <span id="script-count"></span>
+    <button id="edit-clear" type="button">Clear all</button>
+  </div>
+  <div id="edit-banner">Tap characters to add or remove. Tap Done when finished.</div>
 </header>
 <div id="intro">
   <p>Blood on the Clocktower is a social deduction game for 5–20 players. Each player is secretly assigned a character. The <b style="color:#4488CC">good team</b> (Townsfolk &amp; Outsiders) tries to find and execute the <b style="color:#CC3333">Demon</b> before everyone is dead. The <b style="color:#F56618">evil team</b> (Minions &amp; Demon) tries to survive, bluff, and mislead. Each night, the Demon kills a player; each day, the town debates and may execute one player by vote. Characters have unique abilities that provide information, protection, or chaos. Even dead players get one final vote — nobody is eliminated from the conversation.</p>
@@ -529,6 +612,7 @@ const SETS = [
   {id:'sv', label:'Sects & Violets'},
   {id:'bmr', label:'Bad Moon Rising'},
   {id:'exp', label:'Experimental'},
+  {id:'custom', label:'Custom'},
 ];
 const FACTIONS = [
   {id:'townsfolk', label:'Townsfolk'},
@@ -538,13 +622,23 @@ const FACTIONS = [
   {id:'traveller', label:'Travellers'},
 ];
 
-const SET_LABELS = {tb:'Trouble Brewing',sv:'Sects & Violets',bmr:'Bad Moon Rising',exp:'Experimental'};
+const SET_LABELS = {tb:'Trouble Brewing',sv:'Sects & Violets',bmr:'Bad Moon Rising',exp:'Experimental',custom:'Custom Script'};
 const FACTION_LABELS = {townsfolk:'Townsfolk',outsider:'Outsiders',minion:'Minions',demon:'Demons',traveller:'Travellers'};
 const FACTION_ORDER = ['townsfolk','outsider','minion','demon','traveller'];
-const SET_ORDER = ['tb','sv','bmr','exp'];
+const SET_ORDER = ['tb','sv','bmr','exp','custom'];
+
+const STORAGE_KEY = 'botc-custom-script';
+const customScript = new Set();
+try {
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  if (Array.isArray(data)) data.forEach(n => customScript.add(n));
+} catch (e) {}
+function saveCustomScript() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...customScript])); } catch (e) {}
+}
 
 const state = {
-  sets: new Set(['tb','sv','bmr','exp']),
+  sets: new Set(['tb','sv','bmr','exp','custom']),
   factions: new Set(['townsfolk','outsider','minion','demon','traveller']),
   search: ''
 };
@@ -569,10 +663,13 @@ function createChips() {
 function render() {
   const r = document.getElementById('results');
   const q = state.search.toLowerCase();
-  const filtered = CHARACTERS.filter(c =>
-    state.sets.has(c.s) && state.factions.has(c.f) &&
-    (!q || c.n.toLowerCase().includes(q))
-  );
+  const customActive = state.sets.has('custom');
+  const filtered = CHARACTERS.filter(c => {
+    const setMatch = state.sets.has(c.s) || (customActive && customScript.has(c.n));
+    return setMatch && state.factions.has(c.f) && (!q || c.n.toLowerCase().includes(q));
+  });
+
+  updateScriptCount();
 
   if (!filtered.length) {
     r.innerHTML = '<div class="no-results">No characters match your filters.</div>';
@@ -580,10 +677,13 @@ function render() {
   }
 
   let html = '';
-  // Group by set, then faction
+  let totalShown = 0;
+  // Group by set (with 'custom' as a virtual set), then faction
   for (const s of SET_ORDER) {
     if (!state.sets.has(s)) continue;
-    const setChars = filtered.filter(c => c.s === s);
+    const setChars = s === 'custom'
+      ? filtered.filter(c => customScript.has(c.n))
+      : filtered.filter(c => c.s === s);
     if (!setChars.length) continue;
     html += `<div class="set-${s}"><div class="set-header">${SET_LABELS[s]}</div>`;
     for (const f of FACTION_ORDER) {
@@ -593,17 +693,23 @@ function render() {
       const headerNote = f === 'traveller' ? '<sup class="gloss" data-key="traveller">?</sup>' : '';
       html += `<div class="faction-${f}"><div class="faction-header">${FACTION_LABELS[f]}${headerNote}</div>`;
       for (const c of fChars) {
-        // Annotate glossary terms, then highlight setup text in brackets
         const ability = annotate(c.a).replace(/(\[.*?\])/g, '<em>$1</em>');
         const img = c.i ? `<img class="char-icon" src="${c.i}" alt="" loading="lazy">` : '';
-        html += `<div class="card card-${c.f}"><div class="name">${img}${highlight(c.n, q)}</div><div class="ability">${ability}</div></div>`;
+        const inScript = customScript.has(c.n) ? ' in-script' : '';
+        html += `<div class="card card-${c.f}${inScript}" data-name="${c.n}"><div class="name">${img}${highlight(c.n, q)}</div><div class="ability">${ability}</div></div>`;
+        totalShown++;
       }
       html += '</div>';
     }
     html += '</div>';
   }
-  html += `<div class="count">${filtered.length} character${filtered.length===1?'':'s'}</div>`;
+  html += `<div class="count">${totalShown} character${totalShown===1?'':'s'} shown</div>`;
   r.innerHTML = html;
+}
+
+function updateScriptCount() {
+  const span = document.getElementById('script-count');
+  span.textContent = customScript.size === 0 ? '' : `${customScript.size} in script`;
 }
 
 function highlight(text, q) {
@@ -641,9 +747,37 @@ document.addEventListener('click', e => {
     }
     return;
   }
+  if (document.body.classList.contains('editing')) {
+    const card = e.target.closest('.card');
+    if (card) {
+      const name = card.dataset.name;
+      const scrollY = window.scrollY;
+      if (customScript.has(name)) customScript.delete(name);
+      else customScript.add(name);
+      saveCustomScript();
+      render();
+      window.scrollTo(0, scrollY);
+      return;
+    }
+  }
   if (!e.target.closest('#glossary-popup')) popup.classList.remove('show');
 });
 popup.querySelector('.gloss-close').addEventListener('click', () => popup.classList.remove('show'));
+
+const editBtn = document.getElementById('edit-script-btn');
+editBtn.addEventListener('click', () => {
+  const editing = document.body.classList.toggle('editing');
+  editBtn.innerHTML = editing ? 'Done' : '&#9998; Edit Custom Script';
+});
+document.getElementById('edit-clear').addEventListener('click', () => {
+  if (!customScript.size) return;
+  if (confirm(`Remove all ${customScript.size} characters from your custom script?`)) {
+    customScript.clear();
+    saveCustomScript();
+    render();
+  }
+});
+updateScriptCount();
 
 createChips();
 render();
