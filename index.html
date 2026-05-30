@@ -263,6 +263,19 @@ body.editing #edit-script-btn {
   font-family: inherit;
 }
 body.editing #edit-clear { display: inline; }
+#copy-script-btn {
+  background: none;
+  border: 1px solid #555;
+  border-radius: 10px;
+  color: #aaa;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 8px;
+  font-family: inherit;
+  display: none;
+}
+#copy-script-btn.has-script { display: inline; }
+#copy-script-btn.copied { color: #7cfc7c; border-color: #7cfc7c; }
 #edit-banner {
   display: none;
   background: #2a2118;
@@ -318,6 +331,7 @@ body.editing .card.in-script::after {
   <div id="edit-bar">
     <button id="edit-script-btn">&#9998; Edit Custom Script</button>
     <span id="script-count"></span>
+    <button id="copy-script-btn" type="button">Copy</button>
     <button id="edit-clear" type="button">Clear all</button>
   </div>
   <div id="edit-banner">Tap characters to add or remove. Tap Done when finished.</div>
@@ -710,6 +724,9 @@ function render() {
 function updateScriptCount() {
   const span = document.getElementById('script-count');
   span.textContent = customScript.size === 0 ? '' : `${customScript.size} in script`;
+  const copyBtn = document.getElementById('copy-script-btn');
+  if (customScript.size > 0) copyBtn.classList.add('has-script');
+  else copyBtn.classList.remove('has-script');
 }
 
 function highlight(text, q) {
@@ -768,6 +785,18 @@ const editBtn = document.getElementById('edit-script-btn');
 editBtn.addEventListener('click', () => {
   const editing = document.body.classList.toggle('editing');
   editBtn.innerHTML = editing ? 'Done' : '&#9998; Edit Custom Script';
+});
+document.getElementById('copy-script-btn').addEventListener('click', () => {
+  if (!customScript.size) return;
+  const text = JSON.stringify([...customScript]);
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-script-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  }).catch(() => {
+    prompt('Copy this script:', JSON.stringify([...customScript]));
+  });
 });
 document.getElementById('edit-clear').addEventListener('click', () => {
   if (!customScript.size) return;
