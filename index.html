@@ -86,6 +86,8 @@ label.chip.off { opacity: 0.35; }
 .chip-minion { background: #301008; color: #F56618; border-color: #F56618; }
 .chip-demon { background: #3a0a0a; color: #CC3333; border-color: #CC3333; }
 .chip-traveller { background: #1a102a; color: #9966CC; border-color: #9966CC; }
+.chip-fabled    { background: #1a1800; color: #e8c000; border-color: #e8c000; }
+.chip-loric     { background: #061a0c; color: #3dba6e; border-color: #3dba6e; }
 
 #intro {
   padding: 12px 16px 4px;
@@ -121,6 +123,8 @@ label.chip.off { opacity: 0.35; }
 .faction-minion .faction-header { color: #F56618; }
 .faction-demon .faction-header { color: #CC3333; }
 .faction-traveller .faction-header { color: #9966CC; }
+.faction-fabled    .faction-header { color: #e8c000; }
+.faction-loric     .faction-header { color: #3dba6e; }
 
 .card {
   padding: 8px 10px;
@@ -133,6 +137,8 @@ label.chip.off { opacity: 0.35; }
 .card-minion { background: #1f0a04; border-color: #F56618; }
 .card-demon { background: #200808; border-color: #CC3333; }
 .card-traveller { background: #150d20; border-color: #9966CC; }
+.card-fabled   { background: #1a1800; border-color: #e8c000; }
+.card-loric    { background: #061a0c; border-color: #3dba6e; }
 
 .char-icon { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px; vertical-align: middle; }
 .card .name {
@@ -146,6 +152,8 @@ label.chip.off { opacity: 0.35; }
 .card-minion .name { color: #F56618; }
 .card-demon .name { color: #CC3333; }
 .card-traveller .name { color: #9966CC; }
+.card-fabled   .name { color: #e8c000; }
+.card-loric    .name { color: #3dba6e; }
 
 .card .ability {
   font-size: 13px;
@@ -187,6 +195,25 @@ label.chip.off { opacity: 0.35; }
   font-size: 13px;
   vertical-align: baseline;
 }
+.djinn-alert { font-size: 10px; background: #e8c000; color: #000; border-radius: 8px; padding: 1px 6px; margin-left: 6px; font-weight: 700; vertical-align: middle; cursor: pointer; }
+.djinn-jinx-btn { font-size: 10px; color: #e8c000; border: 1px solid #e8c00077; border-radius: 8px; padding: 1px 6px; margin-left: 6px; background: none; cursor: pointer; font-family: inherit; vertical-align: middle; }
+#jinx-popup {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #111;
+  border-top: 2px solid #e8c000;
+  z-index: 200;
+  padding: 12px 16px 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+#jinx-popup.show { display: block; }
+#jinx-popup .jinx-title { color: #e8c000; font-weight: 700; font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+#jinx-popup .jinx-close { font-size: 20px; cursor: pointer; color: #888; line-height: 1; }
+#jinx-popup .jinx-pair { font-weight: 700; font-size: 13px; color: #ddd; margin-top: 8px; }
+#jinx-popup .jinx-rule { font-size: 12px; color: #aaa; margin-top: 2px; padding-left: 8px; border-left: 2px solid #e8c00066; }
+#jinx-popup .jinx-none { color: #666; font-size: 13px; font-style: italic; }
 #glossary-popup {
   position: fixed;
   bottom: 16px;
@@ -391,6 +418,10 @@ body.editing .card.in-script::after {
 </div>
 <div id="results"></div>
 
+<div id="jinx-popup">
+  <div class="jinx-title">Djinn Rules <span class="jinx-close">&times;</span></div>
+  <div id="jinx-list"></div>
+</div>
 <div id="glossary-popup" role="dialog" aria-live="polite">
   <button class="gloss-close" aria-label="Close">&times;</button>
   <div class="gloss-label"></div>
@@ -670,12 +701,191 @@ const CHARACTERS = [
   {n:"Cacklejack",a:"Once per game, during the day, publicly choose a player: they die. If they are not the alignment you think they are, you die.",s:"exp",f:"traveller",i:W+"d/d7/Icon_cacklejack.png"},
 ];
 
+// Fabled — Storyteller characters (yellow)
+CHARACTERS.push(
+  {n:"Angel",a:"Something bad might happen to whoever is most responsible for the death of a new player.",s:"fabled",f:"fabled",i:""},
+  {n:"Buddhist",a:"For the first 2 minutes of each day, veteran players may not talk.",s:"fabled",f:"fabled",i:""},
+  {n:"Deus ex Fiasco",a:"At least once per game, the Storyteller will make a mistake, correct it, and publicly admit to it.",s:"fabled",f:"fabled",i:""},
+  {n:"Djinn",a:"Use the Djinn's special rules. All players know these rules.",s:"fabled",f:"fabled",i:""},
+  {n:"Doomsayer",a:"If 4 or more players live, each living player may publicly choose (once per game) that a player of their own alignment dies.",s:"fabled",f:"fabled",i:""},
+  {n:"Duchess",a:"Each day, 3 players may choose to visit you. At night*, each visitor learns how many visitors are evil, but 1 gets false info.",s:"fabled",f:"fabled",i:""},
+  {n:"Ferryman",a:"On the final day, all dead players regain their vote token.",s:"fabled",f:"fabled",i:""},
+  {n:"Fibbin",a:"Once per game, 1 good player might get incorrect information.",s:"fabled",f:"fabled",i:""},
+  {n:"Fiddler",a:"Once per game, the Demon secretly chooses an opposing player: all players choose which of these 2 players win.",s:"fabled",f:"fabled",i:""},
+  {n:"Hell's Librarian",a:"Something bad might happen to whoever talks when the Storyteller has asked for silence.",s:"fabled",f:"fabled",i:""},
+  {n:"Revolutionary",a:"2 neighboring players are known to be the same alignment. Once per game, 1 of them registers falsely.",s:"fabled",f:"fabled",i:""},
+  {n:"Sentinel",a:"There might be 1 extra or 1 fewer Outsider in play.",s:"fabled",f:"fabled",i:""},
+  {n:"Spirit of Ivory",a:"There can't be more than 1 extra evil player.",s:"fabled",f:"fabled",i:""},
+  {n:"Toymaker",a:"The Demon may choose not to attack & must do this at least once per game. Evil players get normal starting info.",s:"fabled",f:"fabled",i:""}
+);
+
+// Loric — Storyteller characters (green)
+CHARACTERS.push(
+  {n:"Big Wig",a:"Each nominee chooses a player: until voting, only they may speak & they are mad the nominee is good or they might die.",s:"loric",f:"loric",i:""},
+  {n:"Bootlegger",a:"If any homebrew characters or non-standard rules are used, announce this at the start of the game.",s:"loric",f:"loric",i:""},
+  {n:"Gardener",a:"The Storyteller assigns all players' characters.",s:"loric",f:"loric",i:""},
+  {n:"God of Ug",a:"One Ug hat. When wearing the Ug hat, speak one sound at a time but vote twice. If you fail, pass the Ug hat.",s:"loric",f:"loric",i:""},
+  {n:"Hindu",a:"The first 4 players to die are immediately reincarnated as Travellers of the same alignment.",s:"loric",f:"loric",i:""},
+  {n:"Knaves",a:"There are 2 Storytellers: one lies & one tells the truth. Once per game, at dusk, they might switch.",s:"loric",f:"loric",i:""},
+  {n:"Pope",a:"There are duplicate good characters in play. They might also be bluffs.",s:"loric",f:"loric",i:""},
+  {n:"Storm Catcher",a:"Name a good character. If in play, they can only die by execution, but evil players learn which player it is.",s:"loric",f:"loric",i:""},
+  {n:"Tor",a:"Players don't know their character or alignment. They learn them when they die.",s:"loric",f:"loric",i:""},
+  {n:"Ventriloquist",a:"If a player is mad as a fresh character during their nomination, they might not die if executed today.",s:"loric",f:"loric",i:""},
+  {n:"Zenomancer",a:"One or more players each have a goal. When achieved, that player learns a piece of true info.",s:"loric",f:"loric",i:""}
+);
+
+// Jinx pairs: [charA, charB, rule]
+const JINXES = [
+  ["Alchemist","Boffin","If the Alchemist has the Boffin ability, the Alchemist does not learn what ability the Demon has."],
+  ["Alchemist","Marionette","An Alchemist-Marionette has no Marionette ability & the Marionette is in play."],
+  ["Alchemist","Mastermind","An Alchemist-Mastermind has no Mastermind ability & the Mastermind is not in play."],
+  ["Alchemist","Organ Grinder","If the Alchemist has the Organ Grinder ability, the Organ Grinder is in play. If both are sober, both are drunk."],
+  ["Alchemist","Spy","An Alchemist-Spy has no Spy ability & a Spy is in play."],
+  ["Alchemist","Summoner","The Alchemist-Summoner does not get bluffs, and chooses which Demon but not which player. [No Demon]"],
+  ["Alchemist","Widow","An Alchemist-Widow has no Widow ability & a Widow is in play."],
+  ["Alchemist","Wraith","An Alchemist-Wraith has no Wraith ability & a Wraith is in play."],
+  ["Bounty Hunter","Kazali","If the Kazali turns the Bounty Hunter into a Minion, an evil Townsfolk is not created."],
+  ["Bounty Hunter","Philosopher","If the Philosopher gains the Bounty Hunter ability, a Townsfolk might turn evil."],
+  ["Cannibal","Butler","If the Cannibal gains the Butler ability, the Cannibal learns this."],
+  ["Cannibal","Juggler","If the Juggler guesses on their first day and dies by execution, tonight the living Cannibal learns how many guesses the Juggler got correct."],
+  ["Cannibal","Princess","If the Cannibal nominated, executed, & killed the Princess today, the Demon doesn't kill tonight."],
+  ["Cannibal","Zealot","If the Cannibal gains the Zealot ability, the Cannibal learns this."],
+  ["Mathematician","Chambermaid","The Chambermaid can detect if the Mathematician will wake tonight."],
+  ["Mathematician","Drunk","The Mathematician might learn if the Drunk's ability yielded false info or failed to work."],
+  ["Mathematician","Lunatic","The Mathematician might learn if the Lunatic attacks a different player than the real Demon attacked."],
+  ["Mathematician","Marionette","The Mathematician might learn if the Marionette's ability yielded false info or failed to work."],
+  ["Magician","Legion","The Magician wakes with Legion and might register as evil. Legion knows if a Magician is in play, but not which player."],
+  ["Magician","Marionette","If the Magician is alive, the Demon doesn't know which neighbor is the Marionette."],
+  ["Magician","Spy","When the Spy sees the Grimoire, the Demon and Magician's character tokens are removed."],
+  ["Magician","Vizier","If the Vizier is in play, the Magician has no ability but is immune to the Vizier's ability."],
+  ["Magician","Widow","When the Widow sees the Grimoire, the Demon and Magician's character tokens are removed."],
+  ["Magician","Wraith","After each execution, the living Magician may publicly guess a living player as the Wraith. If correct, the Demon must choose the Wraith tonight."],
+  ["Butler","Organ Grinder","If the Organ Grinder is causing eyes-closed voting, the Butler may raise their hand to vote but their vote is only counted if their master voted too."],
+  ["Heretic","Baron","Only 1 jinxed character can be in play."],
+  ["Heretic","Godfather","Only 1 jinxed character can be in play."],
+  ["Heretic","Lleech","Only 1 jinxed character can be in play."],
+  ["Heretic","Pit-Hag","Only 1 jinxed character can be in play."],
+  ["Heretic","Spy","Only 1 jinxed character can be in play."],
+  ["Heretic","Widow","Only 1 jinxed character can be in play."],
+  ["Plague Doctor","Baron","If the Storyteller would gain the Baron ability, up to two players become Outsiders."],
+  ["Plague Doctor","Boomdandy","If the Storyteller would gain the Boomdandy ability, a player becomes the Boomdandy."],
+  ["Plague Doctor","Evil Twin","If the Storyteller would gain the Evil Twin ability, a player becomes the Evil Twin."],
+  ["Plague Doctor","Fearmonger","If the Storyteller would gain the Fearmonger ability, a Minion gains it and learns this."],
+  ["Plague Doctor","Goblin","If the Storyteller would gain the Goblin ability, a Minion gains it and learns this."],
+  ["Plague Doctor","Marionette","If the Storyteller would gain the Marionette ability, one of the Demon's good neighbors becomes the Marionette."],
+  ["Plague Doctor","Scarlet Woman","If the Storyteller would gain the Scarlet Woman ability, a Minion gains it and learns this."],
+  ["Plague Doctor","Spy","If the Storyteller would gain the Spy ability, a Minion gains it and learns this."],
+  ["Plague Doctor","Wraith","If the Storyteller would gain the Wraith ability, a Minion gains it and learns this."],
+  ["Recluse","Ogre","If the Recluse registers as evil to the Ogre, the Ogre learns that they are evil."],
+  ["Recluse","Sage","The Recluse might register as the Demon to the Sage."],
+  ["Boffin","Cult Leader","If the Demon has the Cult Leader ability, they can't turn good due to this ability."],
+  ["Boffin","Drunk","The Demon cannot have the Drunk ability."],
+  ["Boffin","Goon","If the Demon has the Goon ability, they can't turn good due to this ability."],
+  ["Boffin","Heretic","The Demon cannot have the Heretic ability."],
+  ["Boffin","Ogre","The Demon cannot have the Ogre ability."],
+  ["Boffin","Politician","The Demon cannot have the Politician ability."],
+  ["Boffin","Village Idiot","If there is a spare token, the Boffin can give the Demon the Village Idiot ability."],
+  ["Cerenovus","Goblin","The Cerenovus may choose to make a player mad as a Goblin."],
+  ["Marionette","Balloonist","If the Marionette thinks that they are the Balloonist, an Outsider might have been added during setup."],
+  ["Marionette","Huntsman","If the Marionette thinks that they are the Huntsman, the Damsel was added during setup."],
+  ["Marionette","Kazali","If there would be a Marionette in play, they enter play after the Demon & must start as their neighbor."],
+  ["Marionette","Lil' Monsta","If there would be a Marionette in play, they enter play after the Demon & must start as their neighbor."],
+  ["Marionette","Summoner","If there would be a Marionette in play, they enter play after the Demon & must start as their neighbor."],
+  ["Mastermind","Vigormortis","A Mastermind that has their ability keeps it if the Vigormortis dies."],
+  ["Pit-Hag","Cult Leader","If the Pit-Hag turns an evil player into the Cult Leader, they can't turn good due to their own ability."],
+  ["Pit-Hag","Damsel","If a Pit-Hag creates a Damsel, the Storyteller chooses which player it is."],
+  ["Pit-Hag","Goon","If the Pit-Hag turns an evil player into the Goon, they can't turn good due to their own ability."],
+  ["Pit-Hag","Ogre","If the Pit-Hag turns an evil player into the Ogre, they can't turn good due to their own ability."],
+  ["Pit-Hag","Politician","If the Pit-Hag turns an evil player into the Politician, they can't turn good due to their own ability."],
+  ["Pit-Hag","Village Idiot","If there is a spare token, the Pit-Hag can create an extra Village Idiot."],
+  ["Scarlet Woman","Al-Hadikhia","If there would be two Demons, one of which was the Scarlet Woman, the Scarlet Woman becomes the Scarlet Woman again."],
+  ["Scarlet Woman","Fang Gu","If there would be two Demons, one of which was the Scarlet Woman, the Scarlet Woman remains the Scarlet Woman."],
+  ["Spy","Damsel","If the Spy is (or has been) in play, the Damsel is poisoned."],
+  ["Spy","Ogre","The Spy registers as evil to the Ogre."],
+  ["Spy","Poppy Grower","If the Poppy Grower has their ability, the Spy does not see the Grimoire."],
+  ["Summoner","Clockmaker","The Summoner registers as the Demon to the Clockmaker."],
+  ["Summoner","Courtier","If the living Summoner has no ability, the Storyteller has the Summoner ability."],
+  ["Summoner","Engineer","If the living Summoner is removed from play, the Storyteller has the Summoner ability."],
+  ["Summoner","Hatter","If the Summoner creates a second living Demon, deaths tonight are arbitrary."],
+  ["Summoner","Kazali","If the Summoner creates a second living Demon, deaths tonight are arbitrary."],
+  ["Summoner","Lord of Typhon","If a Lord of Typhon is summoned, they must neighbor a Minion & their other neighbor becomes an evil Minion."],
+  ["Summoner","Pit-Hag","If the Summoner creates a second living Demon, deaths tonight are arbitrary."],
+  ["Summoner","Poppy Grower","If the Poppy Grower is alive on the 3rd night, the Summoner chooses which Demon but not which player."],
+  ["Summoner","Preacher","If the living Summoner has no ability, the Storyteller has the Summoner ability."],
+  ["Summoner","Pukka","The Summoner may summon a Pukka on the 2nd night instead of the 3rd."],
+  ["Summoner","Zombuul","If the Summoner summons a dead player into the Zombuul, the Zombuul has already 'died once'."],
+  ["Vizier","Alsaahir","The Storyteller doesn't declare the Vizier is in play."],
+  ["Vizier","Courtier","If the Vizier loses their ability, they learn this, and cannot die during the day."],
+  ["Vizier","Fearmonger","The Vizier wakes with the Fearmonger, learns who they choose and cannot choose to immediately execute that player."],
+  ["Vizier","Investigator","The Storyteller doesn't declare the Vizier is in play."],
+  ["Vizier","Politician","The Politician might register as evil to the Vizier."],
+  ["Vizier","Preacher","If the Vizier loses their ability, they learn this, and cannot die during the day."],
+  ["Vizier","Zealot","The Zealot might register as evil to the Vizier."],
+  ["Widow","Damsel","If the Widow is (or has been) in play, the Damsel is poisoned."],
+  ["Widow","Poppy Grower","If the Poppy Grower has their ability, the Widow does not see the Grimoire."],
+  ["Al-Hadikhia","Mastermind","If the Al-Hadikhia dies by execution and the Mastermind is alive, the Al-Hadikhia chooses 3 good players tonight: if all 3 choose to live, evil wins."],
+  ["Al-Hadikhia","Princess","If the Princess nominated & executed a player on their 1st day, no one dies to the Al-Hadikhia tonight."],
+  ["Legion","Engineer","If Legion is created, all evil players become Legion. If Legion is in play, the Engineer has no ability but starts knowing this."],
+  ["Legion","Hatter","If Legion is created, all evil players become Legion. If Legion is in play, the Hatter has no ability."],
+  ["Legion","Minstrel","If Legion died by execution today, Legion keeps their ability, but the Minstrel might learn they are Legion."],
+  ["Legion","Politician","The Politician might register as evil to Legion."],
+  ["Legion","Preacher","If the Preacher chooses Legion, Legion keeps their ability, but the Preacher might learn they are Legion."],
+  ["Legion","Summoner","If Legion is summoned, all evil players become Legion."],
+  ["Legion","Zealot","The Zealot might register as evil to Legion."],
+  ["Leviathan","Banshee","Each night*, the Leviathan chooses an alive good player (different to previous nights): a chosen Banshee dies & gains their ability."],
+  ["Leviathan","Exorcist","If the Leviathan nominates and executes the Exorcist-chosen player, good wins."],
+  ["Leviathan","Farmer","Each night*, the Leviathan chooses an alive good player (different to previous nights): a chosen Farmer uses their ability but does not die."],
+  ["Leviathan","Grandmother","If the Leviathan is in play and the Grandchild dies by execution, evil wins."],
+  ["Leviathan","Hatter","The Leviathan cannot enter play after day 5."],
+  ["Leviathan","Innkeeper","If the Leviathan nominates and executes an Innkeeper-protected player, good wins."],
+  ["Leviathan","King","If the Leviathan is in play and at least 1 player is dead, the King learns an alive character each night."],
+  ["Leviathan","Mayor","If the Leviathan and the Mayor are alive on day 5 & no execution occurs, good wins."],
+  ["Leviathan","Monk","If the Leviathan nominates and executes the Monk-protected player, good wins."],
+  ["Leviathan","Pit-Hag","The Leviathan cannot enter play after day 5."],
+  ["Leviathan","Ravenkeeper","Each night*, the Leviathan chooses an alive good player (different to previous nights): a chosen Ravenkeeper uses their ability but does not die."],
+  ["Leviathan","Sage","Each night*, the Leviathan chooses an alive good player (different to previous nights): a chosen Sage uses their ability but does not die."],
+  ["Leviathan","Soldier","If the Leviathan nominates and executes the Soldier, good wins."],
+  ["Lil' Monsta","Hatter","If the Hatter dies & the Demon chooses Lil' Monsta, they also choose a Minion to become."],
+  ["Lil' Monsta","Magician","If the Magician is alive, the Storyteller chooses which Minion babysits Lil' Monsta."],
+  ["Lil' Monsta","Poppy Grower","If Lil' Monsta & the Poppy Grower are alive, Minions wake one by one until one of them chooses to take the Lil' Monsta token."],
+  ["Lil' Monsta","Psychopath","If the Psychopath is babysitting Lil' Monsta, they die when executed."],
+  ["Lil' Monsta","Scarlet Woman","If Lil' Monsta dies with 5 or more players alive, the Scarlet Woman babysits Lil' Monsta for the rest of the game."],
+  ["Lil' Monsta","Vizier","If the Vizier is babysitting Lil' Monsta, they die when executed."],
+  ["Lleech","Mastermind","If the Mastermind is alive and the Lleech host dies by execution, the Lleech lives but loses their ability."],
+  ["Lleech","Slayer","If the Slayer slays the Lleech host, the host dies."],
+  ["Riot","Atheist","During a riot, if the Storyteller is nominated, players vote. If they are 'about to die', the game ends. If not, they nominate again."],
+  ["Riot","Banshee","Each night*, Riot chooses an alive good player (different to previous nights): a chosen Banshee dies & gains their ability."],
+  ["Riot","Exorcist","If Riot nominates and executes the Exorcist-chosen player, good wins."],
+  ["Riot","Farmer","Each night*, Riot chooses an alive good player (different to previous nights): a chosen Farmer uses their ability but does not die."],
+  ["Riot","Grandmother","If Riot is in play and the Grandchild dies by execution, evil wins."],
+  ["Riot","Innkeeper","If Riot nominates and executes an Innkeeper-protected player, good wins."],
+  ["Riot","King","If Riot is in play and at least 1 player is dead, the King learns an alive character each night."],
+  ["Riot","Mayor","The Mayor may choose to stop the riot. If they do so when only 1 Riot is alive, good wins. Otherwise, evil wins."],
+  ["Riot","Monk","If Riot nominates and executes the Monk-protected player, good wins."],
+  ["Riot","Ravenkeeper","Each night*, Riot chooses an alive good player (different to previous nights): a chosen Ravenkeeper uses their ability but does not die."],
+  ["Riot","Sage","Each night*, Riot chooses an alive good player (different to previous nights): a chosen Sage uses their ability but does not die."],
+  ["Riot","Soldier","If Riot nominates and executes the Soldier, good wins."],
+  ["Vortox","Banshee","If the Vortox kills the Banshee, all players learn that the Banshee has died."],
+  ["Yaggababble","Exorcist","If the Exorcist chooses the Yaggababble, the Yaggababble does not kill tonight."],
+];
+
+function scriptJinxes() {
+  // Returns jinxes where both characters are in the custom script (or all if no custom script)
+  const active = customScript.size > 0;
+  return JINXES.filter(([a, b]) => !active || (customScript.has(a) && customScript.has(b)));
+}
+function hasScriptJinx() {
+  return JINXES.some(([a, b]) => customScript.has(a) && customScript.has(b));
+}
+
 const SETS = [
   {id:'tb', label:'Trouble Brewing'},
   {id:'sv', label:'Sects & Violets'},
   {id:'bmr', label:'Bad Moon Rising'},
   {id:'exp', label:'Experimental'},
   {id:'custom', label:'Custom'},
+  {id:'fabled', label:'Fabled'},
+  {id:'loric', label:'Loric'},
 ];
 const FACTIONS = [
   {id:'townsfolk', label:'Townsfolk'},
@@ -683,12 +893,14 @@ const FACTIONS = [
   {id:'minion', label:'Minions'},
   {id:'demon', label:'Demons'},
   {id:'traveller', label:'Travellers'},
+  {id:'fabled', label:'Fabled'},
+  {id:'loric', label:'Loric'},
 ];
 
-const SET_LABELS = {tb:'Trouble Brewing',sv:'Sects & Violets',bmr:'Bad Moon Rising',exp:'Experimental',custom:'Custom Script'};
-const FACTION_LABELS = {townsfolk:'Townsfolk',outsider:'Outsiders',minion:'Minions',demon:'Demons',traveller:'Travellers'};
-const FACTION_ORDER = ['townsfolk','outsider','minion','demon','traveller'];
-const SET_ORDER = ['tb','sv','bmr','exp','custom'];
+const SET_LABELS = {tb:'Trouble Brewing',sv:'Sects & Violets',bmr:'Bad Moon Rising',exp:'Experimental',custom:'Custom Script',fabled:'Fabled',loric:'Loric'};
+const FACTION_LABELS = {townsfolk:'Townsfolk',outsider:'Outsiders',minion:'Minions',demon:'Demons',traveller:'Travellers',fabled:'Fabled',loric:'Loric'};
+const FACTION_ORDER = ['townsfolk','outsider','minion','demon','traveller','fabled','loric'];
+const SET_ORDER = ['tb','sv','bmr','exp','custom','fabled','loric'];
 
 const STORAGE_KEY = 'botc-custom-script';
 const customScript = new Set();
@@ -701,8 +913,8 @@ function saveCustomScript() {
 }
 
 const state = {
-  sets: new Set(['tb','sv','bmr','exp','custom']),
-  factions: new Set(['townsfolk','outsider','minion','demon','traveller']),
+  sets: new Set(['tb','sv','bmr','exp','custom','fabled','loric']),
+  factions: new Set(['townsfolk','outsider','minion','demon','traveller','fabled','loric']),
   search: ''
 };
 
@@ -727,8 +939,10 @@ function render() {
   const r = document.getElementById('results');
   const q = state.search.toLowerCase();
   const customActive = state.sets.has('custom');
+  const djinnAutoShow = hasScriptJinx();
   const filtered = CHARACTERS.filter(c => {
-    const setMatch = state.sets.has(c.s) || (customActive && customScript.has(c.n));
+    const setMatch = state.sets.has(c.s) || (customActive && customScript.has(c.n))
+      || (c.n === 'Djinn' && djinnAutoShow);
     return setMatch && state.factions.has(c.f) && (!q || c.n.toLowerCase().includes(q));
   });
 
@@ -759,7 +973,16 @@ function render() {
         const ability = annotate(c.a).replace(/(\[.*?\])/g, '<em>$1</em>');
         const img = c.i ? `<img class="char-icon" src="${c.i}" alt="" loading="lazy">` : '';
         const inScript = customScript.has(c.n) ? ' in-script' : '';
-        html += `<div class="card card-${c.f}${inScript}" data-name="${c.n}"><div class="name">${img}${highlight(c.n, q)}</div><div class="ability">${ability}</div></div>`;
+        let nameExtra = '';
+        if (c.n === 'Djinn') {
+          const relevant = scriptJinxes();
+          if (djinnAutoShow) {
+            nameExtra = `<span class="djinn-alert djinn-jinx-btn">! ${relevant.length} jinx${relevant.length===1?'':'es'}</span>`;
+          } else {
+            nameExtra = `<button class="djinn-jinx-btn">? rules</button>`;
+          }
+        }
+        html += `<div class="card card-${c.f}${inScript}" data-name="${c.n}"><div class="name">${img}${highlight(c.n, q)}${nameExtra}</div><div class="ability">${ability}</div></div>`;
         totalShown++;
       }
       html += '</div>';
@@ -800,8 +1023,29 @@ document.getElementById('search').addEventListener('input', e => {
   render();
 });
 
+const jinxPopup = document.getElementById('jinx-popup');
+const jinxList = document.getElementById('jinx-list');
+function showJinxPopup() {
+  const relevant = scriptJinxes();
+  if (!relevant.length) {
+    jinxList.innerHTML = '<div class="jinx-none">No jinxes for the current script.</div>';
+  } else {
+    jinxList.innerHTML = relevant.map(([a, b, rule]) =>
+      `<div class="jinx-pair">${a} + ${b}</div><div class="jinx-rule">${rule}</div>`
+    ).join('');
+  }
+  jinxPopup.classList.add('show');
+}
+document.querySelector('#jinx-popup .jinx-close').addEventListener('click', () => jinxPopup.classList.remove('show'));
+
 const popup = document.getElementById('glossary-popup');
 document.addEventListener('click', e => {
+  if (e.target.closest('.djinn-jinx-btn')) {
+    e.stopPropagation();
+    showJinxPopup();
+    return;
+  }
+  if (!e.target.closest('#jinx-popup')) jinxPopup.classList.remove('show');
   const g = e.target.closest('.gloss');
   if (g) {
     e.stopPropagation();
@@ -815,7 +1059,7 @@ document.addEventListener('click', e => {
   }
   if (document.body.classList.contains('editing')) {
     const card = e.target.closest('.card');
-    if (card) {
+    if (card && !card.classList.contains('card-fabled') && !card.classList.contains('card-loric')) {
       const name = card.dataset.name;
       const scrollY = window.scrollY;
       if (customScript.has(name)) customScript.delete(name);
