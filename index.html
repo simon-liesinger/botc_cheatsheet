@@ -1106,22 +1106,47 @@ document.getElementById('load-cancel-btn').addEventListener('click', () => {
 document.getElementById('load-confirm-btn').addEventListener('click', () => {
   const text = loadInput.value.trim();
   if (!text) return;
-  let names = [];
-  try {
-    if (text.startsWith('[')) {
-      names = JSON.parse(text);
-    } else {
-      names = text.split(',').map(s => s.trim()).filter(Boolean);
+  // Extract candidate names from any of:
+  //   - JSON array of strings:   ["Imp","Washerwoman"]
+  //   - JSON array of objects:   [{"id":"_meta",...},{"id":"imp"},...]
+  //   - Comma / newline list:    Imp, Washerwoman, "Fortune Teller"
+  // Each candidate is matched against the canonical display name AND the
+  // wiki-style ID (lowercase alphanumerics), so "fortuneteller", "Fortune
+  // Teller", "fortune_teller" all resolve to "Fortune Teller".
+  let candidates = [];
+  if (text.startsWith('[') || text.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(text);
+      const items = Array.isArray(parsed) ? parsed : [parsed];
+      for (const item of items) {
+        if (typeof item === 'string') candidates.push(item);
+        else if (item && typeof item === 'object') {
+          const v = item.id || item.name || item.character;
+          if (typeof v === 'string' && !v.startsWith('_')) candidates.push(v);
+        }
+      }
+    } catch (e) {
+      loadFeedback.textContent = 'Invalid JSON';
+      loadFeedback.style.color = '#cc3333';
+      return;
     }
-  } catch (e) {
-    loadFeedback.textContent = 'Invalid format';
-    loadFeedback.style.color = '#cc3333';
-    return;
+  } else {
+    candidates = text.split(/[,\n\r\t;]+/)
+      .map(s => s.trim().replace(/^["']+|["']+$/g, '').trim())
+      .filter(Boolean);
   }
   const nameByLower = new Map(CHARACTERS.map(c => [c.n.toLowerCase(), c.n]));
-  const matched = names
-    .map(n => nameByLower.get(String(n).toLowerCase().trim()))
-    .filter(Boolean);
+  const nameById = new Map(CHARACTERS.map(c => [c.n.toLowerCase().replace(/[^a-z0-9]/g, ''), c.n]));
+  const matched = [];
+  const seen = new Set();
+  for (const raw of candidates) {
+    const s = String(raw).trim();
+    if (!s) continue;
+    const lower = s.toLowerCase();
+    const id = lower.replace(/[^a-z0-9]/g, '');
+    const hit = nameByLower.get(lower) || nameById.get(id);
+    if (hit && !seen.has(hit)) { seen.add(hit); matched.push(hit); }
+  }
   if (!matched.length) {
     loadFeedback.textContent = 'No matching characters';
     loadFeedback.style.color = '#cc3333';
