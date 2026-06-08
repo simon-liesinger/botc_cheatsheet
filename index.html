@@ -1118,8 +1118,10 @@ document.getElementById('load-confirm-btn').addEventListener('click', () => {
     loadFeedback.style.color = '#cc3333';
     return;
   }
-  const allNames = CHARACTERS.map(c => c.n);
-  const matched = names.filter(n => allNames.includes(n));
+  const nameByLower = new Map(CHARACTERS.map(c => [c.n.toLowerCase(), c.n]));
+  const matched = names
+    .map(n => nameByLower.get(String(n).toLowerCase().trim()))
+    .filter(Boolean);
   if (!matched.length) {
     loadFeedback.textContent = 'No matching characters';
     loadFeedback.style.color = '#cc3333';
