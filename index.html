@@ -290,7 +290,7 @@ body.editing #edit-script-btn {
   font-family: inherit;
 }
 body.editing #edit-clear { display: inline; }
-#copy-script-btn, #load-script-btn {
+#copy-script-btn, #load-script-btn, #link-script-btn {
   background: none;
   border: 1px solid #555;
   border-radius: 10px;
@@ -301,9 +301,9 @@ body.editing #edit-clear { display: inline; }
   font-family: inherit;
 }
 #load-script-btn { display: inline; }
-#copy-script-btn { display: none; }
-#copy-script-btn.has-script { display: inline; }
-#copy-script-btn.copied { color: #7cfc7c; border-color: #7cfc7c; }
+#copy-script-btn, #link-script-btn { display: none; }
+#copy-script-btn.has-script, #link-script-btn.has-script { display: inline; }
+#copy-script-btn.copied, #link-script-btn.copied { color: #7cfc7c; border-color: #7cfc7c; }
 #load-bar {
   display: none;
   align-items: center;
@@ -402,6 +402,7 @@ body.editing .card.in-script::after {
     <span id="script-count"></span>
     <button id="load-script-btn" type="button">Load</button>
     <button id="copy-script-btn" type="button">Copy</button>
+    <button id="link-script-btn" type="button">Link</button>
     <button id="edit-clear" type="button">Clear all</button>
   </div>
   <div id="load-bar">
@@ -1036,8 +1037,9 @@ function updateScriptCount() {
   const span = document.getElementById('script-count');
   span.textContent = customScript.size === 0 ? '' : `${customScript.size} in script`;
   const copyBtn = document.getElementById('copy-script-btn');
-  if (customScript.size > 0) copyBtn.classList.add('has-script');
-  else copyBtn.classList.remove('has-script');
+  const linkBtn = document.getElementById('link-script-btn');
+  if (customScript.size > 0) { copyBtn.classList.add('has-script'); linkBtn.classList.add('has-script'); }
+  else { copyBtn.classList.remove('has-script'); linkBtn.classList.remove('has-script'); }
 }
 
 function highlight(text, q) {
@@ -1138,47 +1140,40 @@ document.getElementById('load-cancel-btn').addEventListener('click', () => {
   loadFeedback.textContent = '';
 });
 
-document.getElementById('load-confirm-btn').addEventListener('click', () => {
-  const text = loadInput.value.trim();
-  if (!text) return;
-  // Extract candidate names from any of:
-  //   - JSON array of strings:   ["Imp","Washerwoman"]
-  //   - JSON array of objects:   [{"id":"_meta",...},{"id":"imp"},...]
-  //   - Comma / newline list:    Imp, Washerwoman, "Fortune Teller"
-  // Each candidate is matched against the canonical display name AND the
-  // wiki-style ID (lowercase alphanumerics), so "fortuneteller", "Fortune
-  // Teller", "fortune_teller" all resolve to "Fortune Teller".
-  // String entries / refs → matched against built-ins. Full character objects with an
-  // "ability" → registered as homebrew so they display with their text.
+// Parse a script blob and apply it to the custom script. Accepts any of:
+//   - JSON array of strings:   ["Imp","Washerwoman"]
+//   - JSON array of objects:   [{"id":"_meta",...},{"id":"imp"},...]
+//   - Comma / newline list:    Imp, Washerwoman, "Fortune Teller"
+// Each candidate is matched against the canonical display name AND the
+// wiki-style ID (lowercase alphanumerics), so "fortuneteller", "Fortune
+// Teller", "fortune_teller" all resolve to "Fortune Teller".
+// String entries / refs → matched against built-ins. Full character objects with an
+// "ability" → registered as homebrew so they display with their text.
+// Returns {ok, matched, homebrewCount} on success, or {ok:false, error}.
+function importScriptText(text) {
+  text = String(text || '').trim();
+  if (!text) return {ok: false, error: 'Nothing to load'};
   let candidates = [];
   let homebrew = [];
   if (text.startsWith('[') || text.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(text);
-      const items = Array.isArray(parsed) ? parsed : [parsed];
-      for (const item of items) {
-        if (typeof item === 'string') { candidates.push(item); continue; }
-        if (!item || typeof item !== 'object') continue;
-        const idv = String(item.id || '');
-        if (idv === '_meta' || idv.startsWith('_')) continue;
-        if (typeof item.ability === 'string' && item.ability.trim()) homebrew.push(item);
-        else { const v = item.id || item.name || item.character; if (typeof v === 'string') candidates.push(v); }
-      }
-    } catch (e) {
-      loadFeedback.textContent = 'Invalid JSON';
-      loadFeedback.style.color = '#cc3333';
-      return;
+    let parsed;
+    try { parsed = JSON.parse(text); }
+    catch (e) { return {ok: false, error: 'Invalid JSON'}; }
+    const items = Array.isArray(parsed) ? parsed : [parsed];
+    for (const item of items) {
+      if (typeof item === 'string') { candidates.push(item); continue; }
+      if (!item || typeof item !== 'object') continue;
+      const idv = String(item.id || '');
+      if (idv === '_meta' || idv.startsWith('_')) continue;
+      if (typeof item.ability === 'string' && item.ability.trim()) homebrew.push(item);
+      else { const v = item.id || item.name || item.character; if (typeof v === 'string') candidates.push(v); }
     }
   } else {
     candidates = text.split(/[,\n\r\t;]+/)
       .map(s => s.trim().replace(/^["']+|["']+$/g, '').trim())
       .filter(Boolean);
   }
-  if (!candidates.length && !homebrew.length) {
-    loadFeedback.textContent = 'Nothing to load';
-    loadFeedback.style.color = '#cc3333';
-    return;
-  }
+  if (!candidates.length && !homebrew.length) return {ok: false, error: 'Nothing to load'};
   // A fresh Load replaces any previously-imported homebrew characters.
   clearHomebrew();
   const nameByLower = new Map(CHARACTERS.map(c => [c.n.toLowerCase(), c.n]));
@@ -1200,11 +1195,7 @@ document.getElementById('load-confirm-btn').addEventListener('click', () => {
     if (builtin) { addName(builtin); }
     else { const added = registerHomebrew(item); if (added && !seen.has(added)) { seen.add(added); matched.push(added); homebrewCount++; } }
   }
-  if (!matched.length) {
-    loadFeedback.textContent = 'No matching characters';
-    loadFeedback.style.color = '#cc3333';
-    return;
-  }
+  if (!matched.length) return {ok: false, error: 'No matching characters'};
   customScript.clear();
   matched.forEach(n => customScript.add(n));
   state.sets.add('custom'); // ensure imported characters are visible
@@ -1212,16 +1203,25 @@ document.getElementById('load-confirm-btn').addEventListener('click', () => {
   saveCustomScript();
   render();
   updateScriptCount();
+  return {ok: true, matched, homebrewCount};
+}
+
+document.getElementById('load-confirm-btn').addEventListener('click', () => {
+  const result = importScriptText(loadInput.value);
+  if (!result.ok) {
+    loadFeedback.textContent = result.error;
+    loadFeedback.style.color = '#cc3333';
+    return;
+  }
   loadFeedback.style.color = '#7cfc7c';
-  loadFeedback.textContent = `Loaded ${matched.length} character${matched.length===1?'':'s'}` + (homebrewCount ? ` (${homebrewCount} homebrew)` : '');
+  loadFeedback.textContent = `Loaded ${result.matched.length} character${result.matched.length===1?'':'s'}` + (result.homebrewCount ? ` (${result.homebrewCount} homebrew)` : '');
   loadInput.value = '';
   setTimeout(() => { loadBar.classList.remove('visible'); loadFeedback.textContent = ''; }, 1800);
 });
 
-document.getElementById('copy-script-btn').addEventListener('click', () => {
-  if (!customScript.size) return;
-  // Round-trippable: built-ins as name strings, homebrew as full official-format
-  // objects, so imported characters survive a copy and can be re-loaded anywhere.
+// Round-trippable script JSON: built-ins as name strings, homebrew as full
+// official-format objects, so imported characters survive export and re-load.
+function serializeScript() {
   const out = [...customScript].map(n => {
     const c = CHARACTERS.find(x => x.n === n);
     if (c && c.s === 'custom') {
@@ -1231,14 +1231,48 @@ document.getElementById('copy-script-btn').addEventListener('click', () => {
     }
     return n;
   });
-  const text = JSON.stringify(out);
+  return JSON.stringify(out);
+}
+
+// URL-safe base64 of a UTF-8 string (so scripts with accents/homebrew survive).
+function utf8ToB64Url(str) {
+  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64UrlToUtf8(b64) {
+  b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+  return decodeURIComponent(escape(atob(b64)));
+}
+
+// Build a shareable link that encodes the current script in the URL hash.
+function buildScriptLink() {
+  const base = location.origin + location.pathname;
+  return base + '#s=' + utf8ToB64Url(serializeScript());
+}
+
+function flashBtn(btn, label) {
+  const orig = btn.textContent;
+  btn.textContent = label;
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+}
+
+document.getElementById('copy-script-btn').addEventListener('click', () => {
+  if (!customScript.size) return;
+  const text = serializeScript();
   navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copy-script-btn');
-    btn.textContent = 'Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+    flashBtn(document.getElementById('copy-script-btn'), 'Copied!');
   }).catch(() => {
-    prompt('Copy this script:', JSON.stringify([...customScript]));
+    prompt('Copy this script:', text);
+  });
+});
+
+document.getElementById('link-script-btn').addEventListener('click', () => {
+  if (!customScript.size) return;
+  const url = buildScriptLink();
+  navigator.clipboard.writeText(url).then(() => {
+    flashBtn(document.getElementById('link-script-btn'), 'Link copied!');
+  }).catch(() => {
+    prompt('Shareable link:', url);
   });
 });
 document.getElementById('edit-clear').addEventListener('click', () => {
@@ -1250,6 +1284,25 @@ document.getElementById('edit-clear').addEventListener('click', () => {
     render();
   }
 });
+// Load a script passed in the URL. Supports, in either the hash or the query:
+//   #s=<base64url>   /  ?s=<base64url>    → encoded round-trippable script (Link button)
+//   ?script=<text>   /  #script=<text>    → plain comma/JSON list for hand-written links
+// An explicit link overrides any previously-saved script.
+function loadScriptFromURL() {
+  const parse = (str) => new URLSearchParams(str.replace(/^[#?]/, ''));
+  const hash = parse(location.hash);
+  const query = parse(location.search);
+  const enc = hash.get('s') || query.get('s');
+  const plain = hash.get('script') || query.get('script');
+  let text = null;
+  if (enc) { try { text = b64UrlToUtf8(enc); } catch (e) { text = null; } }
+  else if (plain) text = plain;
+  if (!text) return;
+  const result = importScriptText(text);
+  if (result.ok) state.sets.add('custom');
+}
+
+loadScriptFromURL();
 autoManageDjinn();
 saveCustomScript();
 updateScriptCount();
