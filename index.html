@@ -1234,19 +1234,43 @@ function serializeScript() {
   return JSON.stringify(out);
 }
 
-// URL-safe base64 of a UTF-8 string (so scripts with accents/homebrew survive).
-function utf8ToB64Url(str) {
-  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+function bytesToB64Url(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-function b64UrlToUtf8(b64) {
+function b64UrlToBytes(b64) {
   b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
-  return decodeURIComponent(escape(atob(b64)));
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+// Legacy: plain UTF-8 base64 (decodes #s= links shared before compression existed).
+function b64UrlToUtf8(b64) {
+  return new TextDecoder().decode(b64UrlToBytes(b64));
+}
+// Raw-deflate a string → URL-safe base64. ~3-5x smaller for homebrew JSON,
+// which keeps shared links short enough to fit in a QR code.
+async function compressToB64Url(str) {
+  const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  const buf = await new Response(stream).arrayBuffer();
+  return bytesToB64Url(new Uint8Array(buf));
+}
+async function decompressFromB64Url(b64) {
+  const stream = new Blob([b64UrlToBytes(b64)]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return await new Response(stream).text();
 }
 
 // Build a shareable link that encodes the current script in the URL hash.
-function buildScriptLink() {
+// Uses compressed #c= when the browser supports it, else falls back to #s=.
+async function buildScriptLink() {
   const base = location.origin + location.pathname;
-  return base + '#s=' + utf8ToB64Url(serializeScript());
+  const json = serializeScript();
+  if (typeof CompressionStream === 'function') {
+    try { return base + '#c=' + (await compressToB64Url(json)); } catch (e) {}
+  }
+  return base + '#s=' + bytesToB64Url(new TextEncoder().encode(json));
 }
 
 function flashBtn(btn, label) {
@@ -1266,9 +1290,9 @@ document.getElementById('copy-script-btn').addEventListener('click', () => {
   });
 });
 
-document.getElementById('link-script-btn').addEventListener('click', () => {
+document.getElementById('link-script-btn').addEventListener('click', async () => {
   if (!customScript.size) return;
-  const url = buildScriptLink();
+  const url = await buildScriptLink();
   navigator.clipboard.writeText(url).then(() => {
     flashBtn(document.getElementById('link-script-btn'), 'Link copied!');
   }).catch(() => {
@@ -1285,30 +1309,36 @@ document.getElementById('edit-clear').addEventListener('click', () => {
   }
 });
 // Load a script passed in the URL. Supports, in either the hash or the query:
-//   #s=<base64url>   /  ?s=<base64url>    → encoded round-trippable script (Link button)
+//   #c=<base64url>   /  ?c=<base64url>    → compressed (deflate-raw) script — the Link button's default
+//   #s=<base64url>   /  ?s=<base64url>    → uncompressed encoded script (legacy / no-CompressionStream links)
 //   ?script=<text>   /  #script=<text>    → plain comma/JSON list for hand-written links
 // An explicit link overrides any previously-saved script.
-function loadScriptFromURL() {
+async function loadScriptFromURL() {
   const parse = (str) => new URLSearchParams(str.replace(/^[#?]/, ''));
   const hash = parse(location.hash);
   const query = parse(location.search);
+  const comp = hash.get('c') || query.get('c');
   const enc = hash.get('s') || query.get('s');
   const plain = hash.get('script') || query.get('script');
   let text = null;
-  if (enc) { try { text = b64UrlToUtf8(enc); } catch (e) { text = null; } }
-  else if (plain) text = plain;
+  try {
+    if (comp) text = await decompressFromB64Url(comp);
+    else if (enc) text = b64UrlToUtf8(enc);
+    else if (plain) text = plain;
+  } catch (e) { text = null; }
   if (!text) return;
   const result = importScriptText(text);
   if (result.ok) state.sets.add('custom');
 }
 
-loadScriptFromURL();
-autoManageDjinn();
-saveCustomScript();
-updateScriptCount();
-
-createChips();
-render();
+(async () => {
+  await loadScriptFromURL();
+  autoManageDjinn();
+  saveCustomScript();
+  updateScriptCount();
+  createChips();
+  render();
+})();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
