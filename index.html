@@ -389,6 +389,20 @@ body.editing .card.in-script::after {
 </head>
 <body>
 <script src="https://keepandroidopen.org/banner.js"></script>
+<script>
+// Make the whole banner bar clickable, not just the message text.
+(function () {
+  var b = document.querySelector('.kao-banner');
+  if (!b) return;
+  var a = b.querySelector('a');
+  if (!a) return;
+  b.style.cursor = 'pointer';
+  b.addEventListener('click', function (e) {
+    if (e.target.closest('a, .kao-banner-close')) return;
+    window.open(a.href, '_blank', 'noopener');
+  });
+})();
+</script>
 <header>
   <h1>BLOOD ON THE CLOCKTOWER</h1>
   <div class="search-box">
